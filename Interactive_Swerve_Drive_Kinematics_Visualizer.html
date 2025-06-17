@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swerve Drive Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+        
+        .swerve-display {
+            flex: 2;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .controls {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        .value-input {
+            min-width: 60px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            outline: none;
+        }
+        
+        .value-input:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #4CAF50;
+        }
+        
+        .module-data {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .module-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .module-info h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+        
+        .module-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        #swerve-svg {
+            display: block;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .speed-arrow {
+            stroke-width: 4;
+            marker-end: url(#arrowhead);
+            opacity: 0.9;
+        }
+        
+        .module-circle {
+            fill: rgba(255, 255, 255, 0.9);
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        .frame-outline {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.7);
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+        }
+        
+        .module-label {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+    </style>
+</head>
+<body>
+    <h1>Swerve Drive Speed & Angle Calculator</h1>
+    
+    <div class="container">
+        <div class="swerve-display">
+            <svg id="swerve-svg" width="500" height="400" viewBox="0 0 500 400">
+                <defs>
+                    <marker id="arrowhead" markerWidth="8" markerHeight="6" 
+                            refX="4" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#ff4444" />
+                    </marker>
+                </defs>
+                
+                <!-- Frame outline -->
+                <rect class="frame-outline" x="150" y="100" width="200" height="200" />
+                
+                <!-- Module circles -->
+                <circle class="module-circle" id="module-fl" cx="200" cy="150" r="25" />
+                <circle class="module-circle" id="module-fr" cx="300" cy="150" r="25" />
+                <circle class="module-circle" id="module-bl" cx="200" cy="250" r="25" />
+                <circle class="module-circle" id="module-br" cx="300" cy="250" r="25" />
+                
+                <!-- Module labels -->
+                <text class="module-label" x="200" y="150">FL</text>
+                <text class="module-label" x="300" y="150">FR</text>
+                <text class="module-label" x="200" y="250">BL</text>
+                <text class="module-label" x="300" y="250">BR</text>
+                
+                <!-- Speed arrows -->
+                <line class="speed-arrow" id="arrow-fl" x1="200" y1="150" x2="200" y2="150" stroke="#ff4444" />
+                <line class="speed-arrow" id="arrow-fr" x1="300" y1="150" x2="300" y2="150" stroke="#ff4444" />
+                <line class="speed-arrow" id="arrow-bl" x1="200" y1="250" x2="200" y2="250" stroke="#ff4444" />
+                <line class="speed-arrow" id="arrow-br" x1="300" y1="250" x2="300" y2="250" stroke="#ff4444" />
+                
+                <!-- Center rotation indicator -->
+                <circle cx="250" cy="200" r="3" fill="#4CAF50" />
+                <text x="260" y="205" fill="white" font-size="12">Center</text>
+            </svg>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="vx-slider">X Velocity (m/s)</label>
+                <div class="slider-container">
+                    <input type="range" id="vx-slider" min="-5" max="5" step="0.1" value="0">
+                    <input type="number" class="value-input" id="vx-value" min="-5" max="5" step="0.1" value="0">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="vy-slider">Y Velocity (m/s)</label>
+                <div class="slider-container">
+                    <input type="range" id="vy-slider" min="-5" max="5" step="0.1" value="0">
+                    <input type="number" class="value-input" id="vy-value" min="-5" max="5" step="0.1" value="0">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="omega-slider">Angular Velocity (rad/s)</label>
+                <div class="slider-container">
+                    <input type="range" id="omega-slider" min="-6.28" max="6.28" step="0.1" value="0">
+                    <input type="number" class="value-input" id="omega-value" min="-3" max="3" step="0.1" value="0">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="max-speed-slider">Max Module Speed (m/s)</label>
+                <div class="slider-container">
+                    <input type="range" id="max-speed-slider" min="1" max="10" step="0.1" value="5">
+                    <input type="number" class="value-input" id="max-speed-value" min="1" max="10" step="0.1" value="5">
+                </div>
+            </div>
+            
+            <div class="module-data">
+                <div class="module-info">
+                    <h3>Front Left</h3>
+                    <p>Speed: <span id="fl-speed">0.00</span> m/s</p>
+                    <p>Angle: <span id="fl-angle">0.0</span>°</p>
+                </div>
+                <div class="module-info">
+                    <h3>Front Right</h3>
+                    <p>Speed: <span id="fr-speed">0.00</span> m/s</p>
+                    <p>Angle: <span id="fr-angle">0.0</span>°</p>
+                </div>
+                <div class="module-info">
+                    <h3>Back Left</h3>
+                    <p>Speed: <span id="bl-speed">0.00</span> m/s</p>
+                    <p>Angle: <span id="bl-angle">0.0</span>°</p>
+                </div>
+                <div class="module-info">
+                    <h3>Back Right</h3>
+                    <p>Speed: <span id="br-speed">0.00</span> m/s</p>
+                    <p>Angle: <span id="br-angle">0.0</span>°</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Swerve drive parameters
+        const WHEEL_BASE = 0.65; // meters (distance between front and back wheels)
+        const TRACK_WIDTH = 0.65; // meters (distance between left and right wheels)
+        
+        // Module positions relative to center
+        const modulePositions = {
+            fl: {x: -TRACK_WIDTH/2, y: WHEEL_BASE/2},
+            fr: {x: TRACK_WIDTH/2, y: WHEEL_BASE/2},
+            bl: {x: -TRACK_WIDTH/2, y: -WHEEL_BASE/2},
+            br: {x: TRACK_WIDTH/2, y: -WHEEL_BASE/2}
+        };
+        
+        // Get DOM elements
+        const vxSlider = document.getElementById('vx-slider');
+        const vySlider = document.getElementById('vy-slider');
+        const omegaSlider = document.getElementById('omega-slider');
+        const maxSpeedSlider = document.getElementById('max-speed-slider');
+        
+        const vxValue = document.getElementById('vx-value');
+        const vyValue = document.getElementById('vy-value');
+        const omegaValue = document.getElementById('omega-value');
+        const maxSpeedValue = document.getElementById('max-speed-value');
+        
+        // Default values
+        const defaultValues = {
+            vx: 0,
+            vy: 0,
+            omega: 0,
+            maxSpeed: 5
+        };
+        
+        // Double-click tracking
+        let lastClickTime = {};
+        
+        function handleDoubleClick(elementId, defaultValue) {
+            const now = Date.now();
+            const lastTime = lastClickTime[elementId] || 0;
+            
+            if (now - lastTime < 300) { // 300ms double-click threshold
+                // Reset to default value
+                const slider = document.getElementById(elementId + '-slider');
+                const input = document.getElementById(elementId + '-value');
+                
+                slider.value = defaultValue;
+                input.value = defaultValue;
+                updateDisplay();
+            }
+            
+            lastClickTime[elementId] = now;
+        }
+        
+        function calculateSwerveStates(vx, vy, omega) {
+            const states = {};
+            
+            for (const [module, pos] of Object.entries(modulePositions)) {
+                // Calculate module velocity components
+                const moduleVx = vx - omega * pos.y;
+                const moduleVy = vy + omega * pos.x;
+                
+                // Calculate speed and angle
+                const speed = Math.sqrt(moduleVx * moduleVx + moduleVy * moduleVy);
+                const angle = Math.atan2(moduleVy, moduleVx);
+                
+                states[module] = {
+                    speed: speed,
+                    angle: angle,
+                    vx: moduleVx,
+                    vy: moduleVy
+                };
+            }
+            
+            return states;
+        }
+        
+        function normalizeWheelSpeeds(states, maxSpeed) {
+            const speeds = Object.values(states).map(s => s.speed);
+            const maxActualSpeed = Math.max(...speeds);
+            
+            if (maxActualSpeed > maxSpeed) {
+                const scale = maxSpeed / maxActualSpeed;
+                for (const module in states) {
+                    states[module].speed *= scale;
+                    states[module].vx *= scale;
+                    states[module].vy *= scale;
+                }
+            }
+            
+            return states;
+        }
+        
+        function updateDisplay() {
+            const vx = parseFloat(vxSlider.value);
+            const vy = parseFloat(vySlider.value);
+            const omega = parseFloat(omegaSlider.value);
+            const maxSpeed = parseFloat(maxSpeedSlider.value);
+            
+            // Update input values to match sliders
+            vxValue.value = vx.toFixed(1);
+            vyValue.value = vy.toFixed(1);
+            omegaValue.value = omega.toFixed(1);
+            maxSpeedValue.value = maxSpeed.toFixed(1);
+            
+            // Calculate swerve states
+            let states = calculateSwerveStates(vx, vy, omega);
+            states = normalizeWheelSpeeds(states, maxSpeed);
+            
+            // Update module data displays
+            for (const [module, state] of Object.entries(states)) {
+                const speedElement = document.getElementById(`${module}-speed`);
+                const angleElement = document.getElementById(`${module}-angle`);
+                
+                speedElement.textContent = state.speed.toFixed(2);
+                angleElement.textContent = (state.angle * 180 / Math.PI).toFixed(1);
+            }
+            
+            // Update SVG arrows
+            updateArrows(states);
+        }
+        
+        function updateFromInput() {
+            const vx = parseFloat(vxValue.value);
+            const vy = parseFloat(vyValue.value);
+            const omega = parseFloat(omegaValue.value);
+            const maxSpeed = parseFloat(maxSpeedValue.value);
+            
+            // Update sliders to match inputs
+            vxSlider.value = vx;
+            vySlider.value = vy;
+            omegaSlider.value = omega;
+            maxSpeedSlider.value = maxSpeed;
+
+            updateDisplay();
+        }
+        
+        function updateArrows(states) {
+            const moduleCoords = {
+                fl: {x: 200, y: 150},
+                fr: {x: 300, y: 150},
+                bl: {x: 200, y: 250},
+                br: {x: 300, y: 250}
+            };
+            
+            const maxSpeed = parseFloat(maxSpeedSlider.value);
+            const arrowScale = 20; // Increased scale factor for larger arrows
+            
+            for (const [module, state] of Object.entries(states)) {
+                const arrow = document.getElementById(`arrow-${module}`);
+                const coords = moduleCoords[module];
+                
+                // Calculate arrow end position
+                const arrowLength = state.speed * arrowScale;
+                const endX = coords.x + Math.cos(state.angle) * arrowLength;
+                const endY = coords.y - Math.sin(state.angle) * arrowLength; // Negative because SVG Y increases downward
+                
+                // Update arrow
+                arrow.setAttribute('x1', coords.x);
+                arrow.setAttribute('y1', coords.y);
+                arrow.setAttribute('x2', endX);
+                arrow.setAttribute('y2', endY);
+                
+                // Set arrow opacity and visibility
+                const opacity = Math.max(0.4, Math.min(1, state.speed / maxSpeed + 0.4));
+                arrow.style.opacity = opacity;
+            }
+        }
+        // Add event listeners for text inputs
+        vxValue.addEventListener('input', updateFromInput);
+        vyValue.addEventListener('input', updateFromInput);
+        omegaValue.addEventListener('input', updateFromInput);
+        maxSpeedValue.addEventListener('input', updateFromInput);
+        
+        // Add event listeners
+        vxSlider.addEventListener('input', updateDisplay);
+        vySlider.addEventListener('input', updateDisplay);
+        omegaSlider.addEventListener('input', updateDisplay);
+        maxSpeedSlider.addEventListener('input', updateDisplay);
+        
+        // Add double-click event listeners for reset functionality
+        vxSlider.addEventListener('click', () => handleDoubleClick('vx', defaultValues.vx));
+        vySlider.addEventListener('click', () => handleDoubleClick('vy', defaultValues.vy));
+        omegaSlider.addEventListener('click', () => handleDoubleClick('omega', defaultValues.omega));
+        maxSpeedSlider.addEventListener('click', () => handleDoubleClick('max-speed', defaultValues.maxSpeed));
+        
+        // Initial update
+        updateDisplay();
+    </script>
+</body>
+</html>
